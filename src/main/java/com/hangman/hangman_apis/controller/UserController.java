@@ -3,9 +3,11 @@ package com.hangman.hangman_apis.controller;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,22 +24,30 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody UserDto userDto) {
-        User user = userService.registerUser(userDto);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<User> registerUser(@RequestBody UserDto userDto) {
+        User user = userService.createUser(userDto.getUsername(),userDto.getPassword());
+        return new ResponseEntity<User>(user, HttpStatus.OK);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody LoginDto loginDto) {
-        Optional<User> userOptional = userService.findByUsername(loginDto.getUsername());
+        Optional<User> userOptional = userService.getUserByUsername(loginDto.getUsername());
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
             if (passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
                 return ResponseEntity.ok(user);
             }
         }
         return ResponseEntity.status(401).body("Invalid username or password");
     }
+
+     @GetMapping("/{id}")
+    public Optional<User> getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+    
 }
